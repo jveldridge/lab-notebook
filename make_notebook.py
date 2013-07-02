@@ -19,7 +19,7 @@ def copy_and_replace_references(file):
 
 	for reference in get_references(text):
 		dst = ref_folder_path + "/" + os.path.basename(reference)
-		shutil.copyfile(reference, dst)
+		shutil.copytree(reference, dst) if os.path.isdir(reference) else shutil.copyfile(reference, dst)
 		text = text.replace(reference, dst)
 
 	return text
