@@ -29,6 +29,16 @@ def write_to_file(file, text):
 		f.write(text)
 	f.close()
 
+def add_to_index_if_not_present(output_file):
+	index_file = "../index.md"
+	index_text = load_file(index_file).rstrip()
+
+	output_name = os.path.basename(output_file)[:os.path.basename(output_file).rfind(".html")]
+	if output_name not in index_text:
+		index_text += "\n* [" + output_name + "](diaries/" + output_file + ")\n"
+		write_to_file(index_file, index_text)
+
+
 def run(file, git_repo_dir, commit_message=None):
 	#generate output file name
 	output_file = os.path.basename(file)[:os.path.basename(file).rfind(".md")] + ".html"
@@ -42,6 +52,9 @@ def run(file, git_repo_dir, commit_message=None):
 	#call Markdown.pl to convert to HTML
 	cmd = "/contrib/projects/markdown/Markdown.pl " + file + " > " + output_file
 	os.system(cmd)
+
+	#add to index file, if not already present
+	add_to_index_if_not_present(output_file)
 
 	#if commit message given, commit everything to a git repo
 	if commit_message:
