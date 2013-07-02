@@ -29,7 +29,7 @@ def write_to_file(file, text):
 		f.write(text)
 	f.close()
 
-def run(file, git_repo_dir, commit_message):
+def run(file, git_repo_dir, commit_message=None):
 	#generate output file name
 	output_file = os.path.basename(file)[:os.path.basename(file).rfind(".md")] + ".html"
 	
@@ -43,10 +43,11 @@ def run(file, git_repo_dir, commit_message):
 	cmd = "/contrib/projects/markdown/Markdown.pl " + file + " > " + output_file
 	os.system(cmd)
 
-	#commit everything to a git repo
-	os.chdir(git_repo_dir)
-	cmd = "git add .; git commit -a -m '" + commit_message + "'; git push origin master"
-	os.system(cmd)
+	#if commit message given, commit everything to a git repo
+	if commit_message:
+		os.chdir(git_repo_dir)
+		cmd = "git add .; git commit -a -m '" + commit_message + "'; git push origin master"
+		os.system(cmd)
 
 	#open the output in Chrome
 	#os.system("chrome " + output_file + "&")
