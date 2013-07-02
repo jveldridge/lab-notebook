@@ -53,4 +53,4 @@ def run(file, git_repo_dir, commit_message=None):
 	#os.system("chrome " + output_file + "&")
 
 if __name__ == "__main__": 
-    run(sys.argv[1], sys.argv[2])
+    run(*sys.argv[1:])
