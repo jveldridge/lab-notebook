@@ -6,7 +6,7 @@ def load_file(file):
 		return f.read()
 
 def get_references(text):
-	return [match for match in re.findall("\[.*?\]\((.*?)\)", text) if not match.startswith(('http://', 'https://'))]
+	return [match for match in re.findall("\[.*?\]\((.*?)\)", text) if not match.startswith(('http://', 'https://', '/data/'))]
 
 def copy_and_replace_references(file):
 	ref_folder_name = os.path.basename(file)[:os.path.basename(file).find(".md")] + "-resources"
