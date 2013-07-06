@@ -54,6 +54,9 @@ def write_to_file(file, text):
         f.write(text)
     f.close()
 
+def add_footer(html_file):
+    os.system('cat footer.html >> %s' % (html_file))
+
 def add_to_index_if_not_present(output_file, repo_path):
     index_file = repo_path + "/index.md"
     index_text = load_file(index_file).rstrip()
@@ -78,8 +81,8 @@ def run(args):
 
     #call Markdown to convert to HTML
     cmd = '%s %s > %s' % (args.convert_cmd, args.file, output_file)
-    #cmd = "/contrib/projects/markdown/Markdown.pl " + file + " > " + output_file
     os.system(cmd)
+    add_footer(output_file)
 
     #add to index file, if not already present
     add_to_index_if_not_present(output_file, repo_path)
