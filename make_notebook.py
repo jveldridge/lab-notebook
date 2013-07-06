@@ -2,6 +2,7 @@
 import re
 import os, shutil, sys
 from ArgParser import *
+import time
 
 def parse_args(raw_args):  
     
@@ -24,23 +25,27 @@ def load_file(file):
     with open(file) as f:
         return f.read()
 
-def get_references(text):
-    return [match for match in re.findall("\[.*?\]\((.*?)\)", text)
-                if not match.startswith(('http://', 'https://', '/data/'))]
+def get_references_to_replace(text, prefixes_to_exclude, repo_path):
+    matches = re.findall("\[.*?\]\((.*?)\)", text)
+    return filter(get_match_filter(prefixes_to_exclude, repo_path), matches)
 
-def copy_and_replace_references(file):
-    ref_folder_name = os.path.basename(file)[:os.path.basename(file).find(".md")] + "-resources"
-    ref_folder_path = os.path.dirname(os.path.abspath(file)) + '/' + ref_folder_name
-    
-    if not os.path.exists(ref_folder_path):
-        os.mkdir(ref_folder_path)
+def get_match_filter(prefixes_to_exclude, repo_path):
+    def match_filter(match):
+        return (not match.startswith(prefixes_to_exclude)
+                and not os.path.abspath(match).startswith(repo_path))
+    return match_filter
 
-    text = load_file(file)
+def copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path):
+    timestamp = time.strftime('%H:%M:%S')
+    ref_folder = entry_file[:entry_file.find(".md")] + "-resources/" + timestamp
+    os.makedirs(ref_folder)
 
-    for reference in get_references(text):
-        dst = ref_folder_path + "/" + os.path.basename(reference)
+    text = load_file(entry_file)
+
+    for reference in get_references_to_replace(text, prefixes_to_exclude, repo_path):
+        dst = ref_folder + "/" + os.path.basename(reference)
         shutil.copytree(reference, dst) if os.path.isdir(reference) else shutil.copyfile(reference, dst)
-        text = text.replace(reference, dst)
+        text = text.replace(reference, os.path.relpath(dst, os.path.dirname(entry_file)))
 
     return text
 
@@ -49,8 +54,8 @@ def write_to_file(file, text):
         f.write(text)
     f.close()
 
-def add_to_index_if_not_present(output_file):
-    index_file = "../index.md"
+def add_to_index_if_not_present(output_file, repo_path):
+    index_file = repo_path + "/index.md"
     index_text = load_file(index_file).rstrip()
 
     output_name = os.path.basename(output_file)[:os.path.basename(output_file).rfind(".html")]
@@ -59,26 +64,29 @@ def add_to_index_if_not_present(output_file):
         write_to_file(index_file, index_text)
 
 def run(args):
-    #generate output file name
-    output_file = os.path.basename(args.file)[:os.path.basename(args.file).rfind(".md")] + ".html"
+    repo_path = os.path.abspath(args.git_repo_dir)
+    entry_file = os.path.relpath(args.file, repo_path)
+
+    output_file = entry_file[:entry_file.rfind(".md")] + ".html"
     
     #copy and replace references
-    updated_md = copy_and_replace_references(args.file)
+    prefixes_to_exclude = ('http://', 'https://', '/data/')
+    updated_md = copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path)
     
     #write markdown updated to use new references
     write_to_file(args.file, updated_md)
 
-    #call Markdown.pl to convert to HTML
+    #call Markdown to convert to HTML
     cmd = '%s %s > %s' % (args.convert_cmd, args.file, output_file)
     #cmd = "/contrib/projects/markdown/Markdown.pl " + file + " > " + output_file
     os.system(cmd)
 
     #add to index file, if not already present
-    add_to_index_if_not_present(output_file)
+    add_to_index_if_not_present(output_file, repo_path)
 
     #if commit message given, commit everything to a git repo
     if args.message:
-        os.chdir(args.git_repo_dir)
+        os.chdir(repo_path)
         cmd = "git add .; git commit -a -m '" + args.message + "'; git push origin master"
         os.system(cmd)
 
