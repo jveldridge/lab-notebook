@@ -63,7 +63,7 @@ def add_to_index_if_not_present(output_file, repo_path, convert_cmd):
 
     output_name = os.path.basename(output_file)[:os.path.basename(output_file).rfind(".html")]
     if output_name not in index_text:
-        index_text += "\n* [" + output_name + "](diaries/" + output_file + ")\n"
+        index_text += "\n* [" + output_name + "](" + output_file + ")\n"
         write_to_file(index_file, index_text)
 
         #convert index file to markdown
