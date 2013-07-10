@@ -57,7 +57,7 @@ def write_to_file(file, text):
 def add_footer(html_file):
     os.system('cat footer.html >> %s' % (html_file))
 
-def add_to_index_if_not_present(output_file, repo_path):
+def add_to_index_if_not_present(output_file, repo_path, convert_cmd):
     index_file = repo_path + "/index.md"
     index_text = load_file(index_file).rstrip()
 
@@ -65,6 +65,9 @@ def add_to_index_if_not_present(output_file, repo_path):
     if output_name not in index_text:
         index_text += "\n* [" + output_name + "](diaries/" + output_file + ")\n"
         write_to_file(index_file, index_text)
+
+        #convert index file to markdown
+        os.system('%s %s > %s' % (convert_cmd, index_file, index_file[index_file.rfind(".md")]+".html"))
 
 def run(args):
     repo_path = os.path.abspath(args.git_repo_dir)
@@ -85,7 +88,7 @@ def run(args):
     add_footer(output_file)
 
     #add to index file, if not already present
-    add_to_index_if_not_present(output_file, repo_path)
+    add_to_index_if_not_present(output_file, repo_path, args.convert_cmd)
 
     #if commit message given, commit everything to a git repo
     if args.message:
