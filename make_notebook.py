@@ -49,6 +49,14 @@ def copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path):
 
     return text
 
+def extract_title(md_text):
+    prev = None
+    for line in md_text.split('\n'):
+        if line.startswith('-----------'):
+            return prev
+        prev = line
+    return "Untitled"
+
 def write_to_file(file, text):
     with open(file, 'w') as f:
         f.write(text)
@@ -57,17 +65,18 @@ def write_to_file(file, text):
 def add_footer(html_file):
     os.system('cat footer.html >> %s' % (html_file))
 
-def add_to_index_if_not_present(output_file, repo_path, convert_cmd):
+def add_to_index_if_not_present(output_file, title, repo_path, convert_cmd):
     index_file = repo_path + "/index.md"
     index_text = load_file(index_file).rstrip()
 
     output_name = os.path.basename(output_file)[:os.path.basename(output_file).rfind(".html")]
     if output_name not in index_text:
-        index_text += "\n* [" + output_name + "](" + output_file + ")\n"
+        index_text += "\n* [" + output_name + ": " + title + "](" + output_file + ")\n"
         write_to_file(index_file, index_text)
 
         #convert index file to markdown
-        os.system('%s %s > %s' % (convert_cmd, index_file, index_file[index_file.rfind(".md")]+".html"))
+        cmd = '%s %s > %s' % (convert_cmd, index_file, index_file[:index_file.rfind(".md")]+".html")
+        os.system(cmd)
 
 def run(args):
     repo_path = os.path.abspath(args.git_repo_dir)
@@ -76,7 +85,9 @@ def run(args):
     output_file = entry_file[:entry_file.rfind(".md")] + ".html"
     
     #copy and replace references
-    prefixes_to_exclude = ('http://', 'https://', '/data/')
+
+    #prefixes_to_exclude = ('http://', 'https://', 'file:///')
+    prefixes_to_exclude = ('http://', 'https://', '/data/', 'file:///')
     updated_md = copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path)
     
     #write markdown updated to use new references
@@ -87,8 +98,10 @@ def run(args):
     os.system(cmd)
     add_footer(output_file)
 
+    title = extract_title(updated_md)
+
     #add to index file, if not already present
-    add_to_index_if_not_present(output_file, repo_path, args.convert_cmd)
+    add_to_index_if_not_present(output_file, title, repo_path, args.convert_cmd)
 
     #if commit message given, commit everything to a git repo
     if args.message:
