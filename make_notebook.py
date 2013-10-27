@@ -3,6 +3,8 @@ import re
 import os, shutil, sys
 from ArgParser import *
 import time
+import random
+import string
 
 def parse_args(raw_args):  
     
@@ -35,6 +37,10 @@ def get_match_filter(prefixes_to_exclude, repo_path):
                 and not os.path.abspath(match).startswith(repo_path))
     return match_filter
 
+RWL = 10
+def randomword(length):
+    return ''.join(random.choice(string.lowercase) for _ in range(length))
+
 def copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path):
     timestamp = time.strftime('%H:%M:%S')
     ref_folder = entry_file[:entry_file.find(".md")] + "-resources/" + timestamp
@@ -43,10 +49,10 @@ def copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path):
     text = load_file(entry_file)
 
     for reference in get_references_to_replace(text, prefixes_to_exclude, repo_path):
-        dst = ref_folder + "/" + os.path.basename(reference)
+        name = os.path.basename(reference)
+        dst = "%s/%s_%s.%s" % (ref_folder, ''.join(name.split('.')[:-1]), randomword(RWL), name.split('.')[-1])
         shutil.copytree(reference, dst) if os.path.isdir(reference) else shutil.copyfile(reference, dst)
         text = text.replace(reference, os.path.relpath(dst, os.path.dirname(entry_file)))
-
     return text
 
 def extract_title(md_text):
