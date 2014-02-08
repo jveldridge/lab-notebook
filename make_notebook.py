@@ -53,7 +53,7 @@ def copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path):
         dst = "%s/%s_%s.%s" % (ref_folder, ''.join(name.split('.')[:-1]), randomword(RWL), name.split('.')[-1])
         shutil.copytree(reference, dst) if os.path.isdir(reference) else shutil.copyfile(reference, dst)
         text = text.replace(reference, os.path.relpath(dst, os.path.dirname(entry_file)))
-    return text
+    return text, ref_folder
 
 def extract_title(md_text):
     prev = None
@@ -94,7 +94,7 @@ def run(args):
 
     #prefixes_to_exclude = ('http://', 'https://', 'file:///')
     prefixes_to_exclude = ('http://', 'https://', '/data/', 'file:///')
-    updated_md = copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path)
+    updated_md, res_dir = copy_and_replace_references(entry_file, prefixes_to_exclude, repo_path)
     
     #write markdown updated to use new references
     write_to_file(args.file, updated_md)
@@ -112,7 +112,9 @@ def run(args):
     #if commit message given, commit everything to a git repo
     if args.message:
         os.chdir(repo_path)
-        cmd = "git add .; git commit -a -m '" + args.message + "'; git push origin master"
+        #cmd = "git add .; git commit -a -m '" + args.message + "'; git push origin master"
+        to_add = "index.html index.md %s %s %s" % (entry_file, output_file, res_dir)
+        cmd = "git add %s; git commit -m '%s'; git push origin master" % (to_add, args.message)
         os.system(cmd)
 
     #open the output in Chrome
